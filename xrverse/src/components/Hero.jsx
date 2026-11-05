@@ -1,7 +1,9 @@
 
+
 import { motion } from "motion/react";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import Hero3D from "./Hero3D";
 
 function Hero() {
   return (
@@ -42,18 +44,12 @@ function Hero() {
       </motion.div>
 
       <motion.div
-        className="hero-orb"
-        animate={{
-          y: [0, -25, 0],
-          rotate: [0, 180, 360]
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
+        className="hero-3d-wrapper"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.2, delay: 0.3 }}
       >
-        <div className="orb-inner" />
+        <Hero3D />
       </motion.div>
     </section>
   );
