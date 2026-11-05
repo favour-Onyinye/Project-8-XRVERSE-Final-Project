@@ -1,0 +1,43 @@
+
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import "./App.css";
+
+function Placeholder({ title }) {
+  return (
+    <main className="placeholder-page">
+      <h1>{title}</h1>
+      <p>This feature is coming soon to XRVERSE.</p>
+    </main>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <div className="app">
+        <Navbar />
+
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route
+            path="/create"
+            element={<Placeholder title="Create Post" />}
+          />
+          <Route
+            path="/explore"
+            element={<Placeholder title="Explore XR Art" />}
+          />
+          <Route
+            path="/post/:id"
+            element={<Placeholder title="Post Details" />}
+          />
+        </Routes>
+      </div>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+
