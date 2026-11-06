@@ -1,14 +1,32 @@
 
 import { Link } from "react-router-dom";
-import { ArrowUp, Clock3 } from "lucide-react";
+import {
+  ArrowUp,
+  Clock3,
+  ArrowUpRight,
+} from "lucide-react";
 
 function PostCard({ post }) {
+  const createdAt = new Date(post.created_at);
+
+  const formattedDate = createdAt.toLocaleDateString(
+    "en-US",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }
+  );
+
   return (
-    <Link to={`/post/${post.id}`} className="post-card">
+    <Link
+      to={`/post/${post.id}`}
+      className="post-card"
+    >
       <div className="post-card-top">
         <span className="post-date">
           <Clock3 size={15} />
-          {new Date(post.created_at).toLocaleDateString()}
+          {formattedDate}
         </span>
       </div>
 
@@ -17,9 +35,12 @@ function PostCard({ post }) {
       <div className="post-card-bottom">
         <span className="upvote-count">
           <ArrowUp size={17} />
-          {post.upvotes} upvotes
+          {post.upvotes ?? 0} upvotes
         </span>
-        <span className="post-arrow">↗</span>
+
+        <span className="post-arrow">
+          <ArrowUpRight size={22} />
+        </span>
       </div>
     </Link>
   );
