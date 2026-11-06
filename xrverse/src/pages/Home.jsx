@@ -1,4 +1,4 @@
-
+import SupabaseCheck from "../components/SupabaseCheck";
 import Hero from "../components/Hero";
 import PostCard from "../components/PostCard";
 
@@ -27,6 +27,7 @@ function Home() {
   return (
     <>
       <Hero />
+      <SupabaseCheck />
 
       <main className="community-section">
         <div className="section-heading">

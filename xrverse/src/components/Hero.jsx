@@ -1,5 +1,3 @@
-
-
 import { motion } from "motion/react";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -49,7 +47,10 @@ function Hero() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.2, delay: 0.3 }}
       >
-        <Hero3D />
+       <div style={{ padding: "60px", color: "cyan" }}>
+          <h2>XRVERSE 3D Sculpture</h2>
+          <p>Testing the homepage before loading 3D.</p>
+        </div>
       </motion.div>
     </section>
   );

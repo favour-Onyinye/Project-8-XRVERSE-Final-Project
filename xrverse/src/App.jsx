@@ -1,7 +1,14 @@
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
+
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
+import CreatePost from "./pages/CreatePost";
+
 import "./App.css";
 
 function Placeholder({ title }) {
@@ -21,17 +28,24 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Home />} />
+
           <Route
             path="/create"
-            element={<Placeholder title="Create Post" />}
+            element={<CreatePost />}
           />
+
           <Route
             path="/explore"
-            element={<Placeholder title="Explore XR Art" />}
+            element={
+              <Placeholder title="Explore XR Art" />
+            }
           />
+
           <Route
             path="/post/:id"
-            element={<Placeholder title="Post Details" />}
+            element={
+              <Placeholder title="Post Details" />
+            }
           />
         </Routes>
       </div>
@@ -40,4 +54,3 @@ function App() {
 }
 
 export default App;
-
