@@ -228,7 +228,6 @@ function Explore() {
                 {filteredArtworks.map((post, index) => {
                   const imageUrl = validMediaUrl(post.image_url);
                   const modelUrl = validMediaUrl(post.model_url);
-                  const videoUrl = validMediaUrl(post.video_url);
 
                   return (
                     <motion.div

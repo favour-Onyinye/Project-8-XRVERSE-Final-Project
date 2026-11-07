@@ -39,6 +39,7 @@ function Hero() {
             Explore XR Art
           </Link>
         </div>
+        <Hero3D />
       </motion.div>
 
       <motion.div

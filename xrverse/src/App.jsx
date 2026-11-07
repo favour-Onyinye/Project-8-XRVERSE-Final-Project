@@ -12,14 +12,6 @@ import Explore from "./pages/Explore";
 
 import "./App.css";
 
-function Placeholder({ title }) {
-  return (
-    <main className="placeholder-page">
-      <h1>{title}</h1>
-      <p>This feature is coming soon to XRVERSE.</p>
-    </main>
-  );
-}
 
 function App() {
   return (
