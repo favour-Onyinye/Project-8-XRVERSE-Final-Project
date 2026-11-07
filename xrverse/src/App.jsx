@@ -4,7 +4,7 @@ import {
   Routes,
   Route,
 } from "react-router-dom";
-
+import PostDetails from "./pages/PostDetails";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import CreatePost from "./pages/CreatePost";
@@ -43,9 +43,7 @@ function App() {
 
           <Route
             path="/post/:id"
-            element={
-              <Placeholder title="Post Details" />
-            }
+            element={<PostDetails />}
           />
         </Routes>
       </div>

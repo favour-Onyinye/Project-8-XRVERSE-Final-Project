@@ -849,3 +849,372 @@
     animation: none;
   }
 }
+
+
+/* ====================================
+   XRVERSE POST DETAILS
+==================================== */
+
+.post-details-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 55px 6% 110px;
+}
+
+.details-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 35px;
+  color: #aaa7bd;
+  transition: color .2s;
+}
+
+.details-back-link:hover {
+  color: #c4b5fd;
+}
+
+/* POST SHOWCASE */
+
+.post-details-card {
+  padding: 45px;
+  border-radius: 25px;
+  background: linear-gradient(
+    145deg,
+    rgba(30, 24, 51, .95),
+    rgba(13, 11, 28, .95)
+  );
+  border: 1px solid rgba(167, 139, 250, .2);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, .22);
+}
+
+.post-details-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border-radius: 30px;
+  background: rgba(124, 58, 237, .15);
+  color: #c4b5fd;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.post-details-card h1 {
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.15;
+  letter-spacing: -1.5px;
+  margin: 25px 0;
+  overflow-wrap: anywhere;
+}
+
+.post-details-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  color: #aaa7bd;
+  font-size: 14px;
+}
+
+.post-details-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.post-description {
+  margin: 35px 0;
+  font-size: 17px;
+  line-height: 1.9;
+  color: #d6d3e6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* IMAGE SHOWCASE */
+
+.post-artwork {
+  margin: 35px 0;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .025);
+  border: 1px solid rgba(255, 255, 255, .08);
+}
+
+.post-artwork img {
+  display: block;
+  width: 100%;
+  max-height: 650px;
+  object-fit: contain;
+  border-radius: 14px;
+}
+
+/* MEDIA LINKS */
+
+.post-media-link {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  margin: 16px 0;
+  background: rgba(124, 58, 237, .08);
+  border: 1px solid rgba(167, 139, 250, .18);
+  border-radius: 16px;
+  color: #c4b5fd;
+}
+
+.post-media-link div {
+  flex: 1;
+  min-width: 0;
+}
+
+.post-media-link h3 {
+  margin: 0 0 7px;
+  color: #f5f3ff;
+  font-size: 17px;
+}
+
+.post-media-link p {
+  margin: 0;
+  color: #aaa7bd;
+  font-size: 13px;
+}
+
+.post-media-link a {
+  display: inline-flex;
+  padding: 10px;
+  border-radius: 10px;
+  color: #22d3ee;
+  background: rgba(34, 211, 238, .08);
+}
+
+/* POST INTERACTIONS */
+
+.post-interactions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 25px;
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, .1);
+}
+
+.upvote-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #8b5cf6;
+  border-radius: 12px;
+  padding: 13px 22px;
+  background: rgba(124, 58, 237, .15);
+  color: #c4b5fd;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .25s;
+}
+
+.upvote-button:hover:not(:disabled) {
+  background: #7c3aed;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.upvote-button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.upvote-button span {
+  padding: 4px 9px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .1);
+}
+
+.comment-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #aaa7bd;
+}
+
+/* COMMENTS */
+
+.comments-section {
+  margin-top: 35px;
+  padding: 40px;
+  border-radius: 25px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(255, 255, 255, .025);
+}
+
+.comments-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #c4b5fd;
+}
+
+.comments-heading h2 {
+  margin: 0;
+  color: white;
+  font-size: 25px;
+}
+
+.comments-heading span {
+  padding: 5px 10px;
+  border-radius: 9px;
+  background: rgba(124, 58, 237, .2);
+}
+
+.comments-intro {
+  color: #aaa7bd;
+  line-height: 1.7;
+  margin: 20px 0 30px;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.comment-form label {
+  font-weight: 600;
+}
+
+.comment-form textarea {
+  padding: 18px;
+  resize: vertical;
+  border-radius: 14px;
+  border: 1px solid #39344f;
+  background: #141225;
+  color: white;
+  font: inherit;
+  outline: none;
+}
+
+.comment-form textarea:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, .15);
+}
+
+.comment-form button {
+  display: inline-flex;
+  align-self: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.comment-form button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  margin-top: 35px;
+}
+
+.comment-card {
+  display: flex;
+  gap: 15px;
+  padding: 22px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(255, 255, 255, .06);
+}
+
+.comment-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.comment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.comment-info span {
+  color: #aaa7bd;
+  font-size: 12px;
+}
+
+.comment-body p {
+  color: #d6d3e6;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.no-comments {
+  padding: 45px 15px;
+  text-align: center;
+  color: #aaa7bd;
+}
+
+.no-comments svg {
+  color: #a78bfa;
+}
+
+/* LOADING AND ERROR */
+
+.post-details-loading,
+.post-details-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 60vh;
+  padding: 40px;
+  text-align: center;
+}
+
+.post-details-loading p,
+.post-details-error p {
+  color: #aaa7bd;
+}
+
+@media (max-width: 650px) {
+  .post-details-page {
+    padding: 30px 5% 65px;
+  }
+
+  .post-details-card,
+  .comments-section {
+    padding: 24px 18px;
+  }
+
+  .post-details-card h1 {
+    letter-spacing: -.5px;
+  }
+
+  .post-interactions {
+    gap: 15px;
+  }
+}
