@@ -1,4 +1,4 @@
-
+import EditPost from "./pages/EditPost";
 import {
   BrowserRouter,
   Routes,
@@ -8,6 +8,7 @@ import PostDetails from "./pages/PostDetails";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import CreatePost from "./pages/CreatePost";
+import Explore from "./pages/Explore";
 
 import "./App.css";
 
@@ -26,6 +27,7 @@ function App() {
       <div className="app">
         <Navbar />
 
+        
         <Routes>
           <Route path="/" element={<Home />} />
 
@@ -35,17 +37,21 @@ function App() {
           />
 
           <Route
-            path="/explore"
-            element={
-              <Placeholder title="Explore XR Art" />
-            }
-          />
-
-          <Route
             path="/post/:id"
             element={<PostDetails />}
           />
+
+          <Route
+            path="/edit/:id"
+            element={<EditPost />}
+          />
+
+          <Route
+            path="/explore"
+            element={<Explore />}
+          />
         </Routes>
+
       </div>
     </BrowserRouter>
   );
