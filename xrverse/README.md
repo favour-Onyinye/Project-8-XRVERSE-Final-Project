@@ -29,7 +29,9 @@ Built with React, Vite, Supabase, Three.js, and React Three Fiber, XRVERSE combi
 
 ## Video Walkthrough
 
-![XRVERSE App Walkthrough](xrverse/public/XVERSE walkthrough.gif)
+Here's a walkthrough of the XRVERSE application:
+
+![XRVERSE App Walkthrough](public/xrverse-walkthrough.gif)
 
 ### Future Improvements
 
