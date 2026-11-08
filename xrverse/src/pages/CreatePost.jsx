@@ -1,4 +1,4 @@
-
+import { uploadMedia } from "../lib/uploadMedia";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
@@ -26,6 +26,10 @@ function CreatePost() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [imageFile, setImageFile] = useState(null);
+  const [modelFile, setModelFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState("");
+
   const categories = [
     "3D Art",
     "Virtual Reality",
@@ -42,6 +46,7 @@ function CreatePost() {
     if (loading) return;
 
     setError("");
+    setUploadStatus("");
 
     if (!title.trim()) {
       setError("Please enter a post title.");
@@ -51,65 +56,92 @@ function CreatePost() {
     setLoading(true);
 
     try {
-      // Get the current Supabase user session.
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      // 1. Reuse the current session or sign in anonymously.
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
 
-      if (userError) throw userError;
+      if (sessionError) throw sessionError;
 
-      // Create anonymous user if needed.
-      let currentUser = user;
+      let user;
 
-      if (!currentUser) {
+      if (sessionData.session) {
+        const { data, error: userError } =
+          await supabase.auth.getUser();
+
+        if (userError) throw userError;
+        user = data.user;
+      } else {
         const { data, error: authError } =
           await supabase.auth.signInAnonymously();
 
         if (authError) throw authError;
-
-        currentUser = data.user;
+        user = data.user;
       }
 
-      if (!currentUser) {
-        throw new Error("Unable to create user session.");
+      if (!user) {
+        throw new Error("Unable to create a user session.");
       }
 
-      // Save the new post.
-      const { data, error: insertError } = await supabase
-        .from("posts")
-        .insert([
-          {
-            user_id: currentUser.id,
+      // 2. Start with optional external URLs.
+      let finalImageUrl = imageUrl.trim() || null;
+      let finalModelUrl = modelUrl.trim() || null;
+
+      // 3. Upload the selected image, if provided.
+      if (imageFile) {
+        setUploadStatus("Uploading your artwork...");
+
+        finalImageUrl = await uploadMedia(
+          imageFile,
+          user.id,
+          "image"
+        );
+      }
+
+      // 4. Upload the selected 3D model, if provided.
+      if (modelFile) {
+        setUploadStatus("Uploading your 3D model...");
+
+        finalModelUrl = await uploadMedia(
+          modelFile,
+          user.id,
+          "model"
+        );
+      }
+
+      // 5. Save the post and uploaded file URLs.
+      setUploadStatus("Publishing your creation...");
+
+      const { data: postData, error: insertError } = await supabase
+          .from("posts")
+          .insert({
+            user_id: user.id,
             title: title.trim(),
             content: content.trim() || null,
-            image_url: imageUrl.trim() || null,
-            model_url: modelUrl.trim() || null,
+            image_url: finalImageUrl,
+            model_url: finalModelUrl,
             video_url: videoUrl.trim() || null,
             category,
-          },
-        ])
-        .select()
-        .single();
+          })
+          .select("id")
+          .single();
 
       if (insertError) throw insertError;
 
-      // Navigate to the newly created post.
-      navigate(`/post/${data.id}`);
+      // 6. Open the finished post.
+      navigate(`/post/${postData.id}`);
+
     } catch (err) {
-      console.error("XRVERSE INSERT ERROR:", {
-        message: err?.message,
-        code: err?.code,
-        details: err?.details,
-        hint: err?.hint,
-      });
+        console.error("XRVERSE upload error:", err);
+
       setError(
-        err.message || "Something went wrong. Please try again."
+        err.message || "Unable to publish your creation."
       );
     } finally {
-      setLoading(false);
+        setLoading(false);
+        setUploadStatus("");
     }
   };
+
 
   return (
     <motion.main
@@ -219,9 +251,39 @@ function CreatePost() {
           Make your post more immersive by adding
           artwork, 3D models, or videos.
         </p>
+        
+        {/* DIRECT IMAGE UPLOAD */}
+
+        <div className="form-group">
+          <label htmlFor="image-upload">
+            <Image size={17} />
+            Upload Artwork from Your Device
+          </label>
+
+          <div className="creative-upload-area">
+            <input
+              id="image-upload"
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,.gif,image/*"
+              onChange={(event) => {
+                setImageFile(event.target.files?.[0] || null);
+              }}
+            />
+
+            <p>
+              Choose a JPG, PNG, WEBP, or GIF image.
+              Maximum 10 MB.
+            </p>
+
+            {imageFile && (
+              <span className="selected-file">
+                Selected: {imageFile.name}
+              </span>
+            )}
+          </div>
+        </div>
 
         {/* IMAGE URL */}
-
         <div className="form-group">
           <label htmlFor="post-image">
             <Image size={17} />
@@ -255,6 +317,37 @@ function CreatePost() {
             />
           </div>
         )}
+
+        {/* DIRECT 3D MODEL UPLOAD */}
+
+        <div className="form-group">
+          <label htmlFor="model-upload">
+            <Box size={17} />
+            Upload Your 3D Model
+          </label>
+
+          <div className="creative-upload-area">
+            <input
+              id="model-upload"
+              type="file"
+              accept=".glb,model/gltf-binary"
+              onChange={(event) => {
+                setModelFile(event.target.files?.[0] || null);
+              }}
+            />
+
+            <p>
+              Choose a GLB 3D model.
+              Maximum 25 MB.
+            </p>
+
+            {modelFile && (
+              <span className="selected-file">
+                Selected: {modelFile.name}
+              </span>
+            )}
+          </div>
+        </div>
 
         {/* 3D MODEL */}
 
@@ -295,6 +388,15 @@ function CreatePost() {
         {error && (
           <div className="form-error" role="alert">
             {error}
+          </div>
+        )}
+
+        {/* UPLOAD MESSAGE */}
+
+        {uploadStatus && (
+          <div className="upload-progress" role="status">
+            <div className="xr-loader" />
+            <span>{uploadStatus}</span>
           </div>
         )}
 
