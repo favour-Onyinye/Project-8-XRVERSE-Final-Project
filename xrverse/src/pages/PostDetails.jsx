@@ -4,7 +4,6 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-
 import { motion } from "motion/react";
 
 import {
@@ -28,12 +27,16 @@ function PostDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // ================================
+  // =====================================
   // STATE
-  // ================================
+  // =====================================
 
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
+
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const [commentText, setCommentText] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -44,9 +47,9 @@ function PostDetails() {
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
 
-  // ================================
-  // FETCH POST AND COMMENTS
-  // ================================
+  // =====================================
+  // 1. LOAD POST AND COMMENTS
+  // =====================================
 
   useEffect(() => {
     let active = true;
@@ -62,14 +65,16 @@ function PostDetails() {
 
         if (postError) throw postError;
 
-        const { data: commentData, error: commentError } =
-          await supabase
-            .from("comments")
-            .select("id, content, created_at, user_id")
-            .eq("post_id", id)
-            .order("created_at", {
-              ascending: true,
-            });
+        const {
+          data: commentData,
+          error: commentError,
+        } = await supabase
+          .from("comments")
+          .select("id, content, created_at, user_id")
+          .eq("post_id", id)
+          .order("created_at", {
+            ascending: true,
+          });
 
         if (commentError) throw commentError;
 
@@ -100,20 +105,64 @@ function PostDetails() {
     };
   }, [id]);
 
-  // ================================
-  // AUTHENTICATION
-  // ================================
+  // =====================================
+  // 2. IDENTIFY CURRENT VISITOR
+  // =====================================
+
+  useEffect(() => {
+    let active = true;
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (active) {
+          setCurrentUser(session?.user ?? null);
+          setAuthLoading(false);
+        }
+      }
+    );
+
+    async function loadCurrentUser() {
+      const { data, error: authError } =
+        await supabase.auth.getUser();
+
+      if (!active) return;
+
+      if (authError) {
+        setCurrentUser(null);
+      } else {
+        setCurrentUser(data.user ?? null);
+      }
+
+      setAuthLoading(false);
+    }
+
+    loadCurrentUser();
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // =====================================
+  // 3. GET OR CREATE ANONYMOUS SESSION
+  // =====================================
 
   const getCurrentUser = async () => {
-    const { data: sessionData, error: sessionError } =
-      await supabase.auth.getSession();
+    const {
+      data: sessionData,
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
     if (sessionError) throw sessionError;
 
-    // Create anonymous session if none exists.
     if (!sessionData.session) {
-      const { data: authData, error: authError } =
-        await supabase.auth.signInAnonymously();
+      const {
+        data: authData,
+        error: authError,
+      } = await supabase.auth.signInAnonymously();
 
       if (authError) throw authError;
 
@@ -123,12 +172,14 @@ function PostDetails() {
         );
       }
 
+      setCurrentUser(authData.user);
       return authData.user;
     }
 
-    // Verify existing session.
-    const { data: userData, error: userError } =
-      await supabase.auth.getUser();
+    const {
+      data: userData,
+      error: userError,
+    } = await supabase.auth.getUser();
 
     if (userError) throw userError;
 
@@ -138,12 +189,22 @@ function PostDetails() {
       );
     }
 
+    setCurrentUser(userData.user);
     return userData.user;
   };
 
-  // ================================
-  // UPVOTE POST
-  // ================================
+  // =====================================
+  // 4. CHECK CREATOR OWNERSHIP
+  // =====================================
+
+  const isOwner =
+    Boolean(currentUser?.id) &&
+    Boolean(post?.user_id) &&
+    currentUser.id === post.user_id;
+
+  // =====================================
+  // 5. UPVOTE
+  // =====================================
 
   const handleUpvote = async () => {
     if (!post || upvoting) return;
@@ -154,19 +215,25 @@ function PostDetails() {
     try {
       await getCurrentUser();
 
-      const { data, error: voteError } =
-        await supabase.rpc("upvote_post", {
-          target_post_id: post.id,
-        });
+      const {
+        data,
+        error: voteError,
+      } = await supabase.rpc("upvote_post", {
+        target_post_id: post.id,
+      });
 
       if (voteError) throw voteError;
 
-      setPost((previous) => ({
-        ...previous,
-        upvotes: data,
-      }));
+      setPost((previous) => {
+        if (!previous) return previous;
+
+        return {
+          ...previous,
+          upvotes: data,
+        };
+      });
     } catch (err) {
-      console.error("XRVERSE upvote error:", err);
+      console.error("Upvote error:", err);
 
       setActionError(
         err.message || "Unable to upvote this post."
@@ -176,9 +243,9 @@ function PostDetails() {
     }
   };
 
-  // ================================
-  // CREATE COMMENT
-  // ================================
+  // =====================================
+  // 6. ADD COMMENT
+  // =====================================
 
   const handleComment = async (event) => {
     event.preventDefault();
@@ -193,16 +260,18 @@ function PostDetails() {
     try {
       const user = await getCurrentUser();
 
-      const { data, error: commentError } =
-        await supabase
-          .from("comments")
-          .insert({
-            post_id: post.id,
-            user_id: user.id,
-            content: commentText.trim(),
-          })
-          .select("id, content, created_at, user_id")
-          .single();
+      const {
+        data,
+        error: commentError,
+      } = await supabase
+        .from("comments")
+        .insert({
+          post_id: post.id,
+          user_id: user.id,
+          content: commentText.trim(),
+        })
+        .select("id, content, created_at, user_id")
+        .single();
 
       if (commentError) throw commentError;
 
@@ -213,7 +282,7 @@ function PostDetails() {
 
       setCommentText("");
     } catch (err) {
-      console.error("XRVERSE comment error:", err);
+      console.error("Comment error:", err);
 
       setActionError(
         err.message || "Unable to post your comment."
@@ -223,17 +292,16 @@ function PostDetails() {
     }
   };
 
-  // ================================
-  // DELETE POST
-  // ================================
+  // =====================================
+  // 7. DELETE POST — CREATOR ONLY
+  // =====================================
 
   const handleDelete = async () => {
-    if (!post || deleting) return;
+    if (!post || deleting || !isOwner) return;
 
     const confirmed = window.confirm(
       "Are you sure you want to permanently delete " +
-      "this post and all its comments? " +
-      "This action cannot be undone."
+      "this post? This action cannot be undone."
     );
 
     if (!confirmed) return;
@@ -242,28 +310,41 @@ function PostDetails() {
     setActionError("");
 
     try {
-      // Ensure the visitor has a valid session.
-      await getCurrentUser();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
-      const { data, error: deleteError } =
-        await supabase
-          .from("posts")
-          .delete()
-          .eq("id", post.id)
-          .select("id")
-          .maybeSingle();
+      if (authError) throw authError;
+
+      if (!user || user.id !== post.user_id) {
+        throw new Error(
+          "Access denied. Only the creator can delete this post."
+        );
+      }
+
+      const {
+        data,
+        error: deleteError,
+      } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", post.id)
+        .eq("user_id", user.id)
+        .select("id")
+        .maybeSingle();
 
       if (deleteError) throw deleteError;
 
       if (!data) {
         throw new Error(
-          "The post could not be deleted."
+          "The post was not deleted. Permission denied."
         );
       }
 
       navigate("/");
     } catch (err) {
-      console.error("XRVERSE delete error:", err);
+      console.error("Delete error:", err);
 
       setActionError(
         err.message || "Unable to delete this post."
@@ -273,9 +354,9 @@ function PostDetails() {
     }
   };
 
-  // ================================
-  // LOADING STATE
-  // ================================
+  // =====================================
+  // 8. LOADING
+  // =====================================
 
   if (loading) {
     return (
@@ -289,9 +370,9 @@ function PostDetails() {
     );
   }
 
-  // ================================
-  // ERROR STATE
-  // ================================
+  // =====================================
+  // 9. ERROR / POST NOT FOUND
+  // =====================================
 
   if (error || !post) {
     return (
@@ -300,19 +381,16 @@ function PostDetails() {
 
         <p>{error || "Post not found."}</p>
 
-        <Link
-          to="/"
-          className="primary-button"
-        >
+        <Link to="/" className="primary-button">
           Return to Community
         </Link>
       </main>
     );
   }
 
-  // ================================
-  // FORMAT DATE
-  // ================================
+  // =====================================
+  // 10. DATE
+  // =====================================
 
   const formattedDate = new Date(
     post.created_at
@@ -321,9 +399,9 @@ function PostDetails() {
     timeStyle: "short",
   });
 
-  // ================================
-  // POST DETAILS PAGE
-  // ================================
+  // =====================================
+  // 11. POST DETAILS PAGE
+  // =====================================
 
   return (
     <motion.main
@@ -335,15 +413,12 @@ function PostDetails() {
     >
       {/* BACK NAVIGATION */}
 
-      <Link
-        to="/"
-        className="details-back-link"
-      >
+      <Link to="/" className="details-back-link">
         <ArrowLeft size={18} />
         Back to Community
       </Link>
 
-      {/* POST CONTENT */}
+      {/* POST DETAILS */}
 
       <article className="post-details-card">
 
@@ -358,7 +433,7 @@ function PostDetails() {
 
         <h1>{post.title}</h1>
 
-        {/* POST METADATA */}
+        {/* METADATA */}
 
         <div className="post-details-meta">
           <span>
@@ -402,8 +477,8 @@ function PostDetails() {
             </div>
 
             <p>
-              Rotate, zoom, and explore this
-              creation from different perspectives.
+              Rotate, zoom, and explore this creation
+              from different perspectives.
             </p>
 
             <ModelViewer url={post.model_url} />
@@ -420,7 +495,7 @@ function PostDetails() {
           </section>
         )}
 
-        {/* VIDEO LINK */}
+        {/* VIDEO */}
 
         {post.video_url && (
           <div className="post-media-link">
@@ -442,10 +517,9 @@ function PostDetails() {
           </div>
         )}
 
-        {/* UPVOTE AND COMMENTS */}
+        {/* UPVOTE AND COMMENT COUNT */}
 
         <div className="post-interactions">
-
           <button
             type="button"
             className="upvote-button"
@@ -456,9 +530,7 @@ function PostDetails() {
 
             {upvoting ? "Voting..." : "Upvote"}
 
-            <span>
-              {post.upvotes ?? 0}
-            </span>
+            <span>{post.upvotes ?? 0}</span>
           </button>
 
           <div className="comment-indicator">
@@ -467,31 +539,37 @@ function PostDetails() {
           </div>
         </div>
 
-        {/* EDIT AND DELETE FOR ALL AUTHENTICATED USERS */}
+        {/* =================================
+            CREATOR-ONLY EDIT AND DELETE
+            ================================= */}
 
-        <div className="post-owner-actions">
-          <Link
-            to={`/edit/${post.id}`}
-            className="edit-post-button"
-          >
-            <Pencil size={18} />
-            Edit Post
-          </Link>
+        {!authLoading && isOwner && (
+          <div className="post-owner-actions">
+            <Link
+              to={`/edit/${post.id}`}
+              className="edit-post-button"
+            >
+              <Pencil size={18} />
+              Edit Post
+            </Link>
 
-          <button
-            type="button"
-            className="delete-post-button"
-            onClick={handleDelete}
-            disabled={deleting}
-          >
-            <Trash2 size={18} />
-            {deleting ? "Deleting..." : "Delete Post"}
-          </button>
-        </div>
+            <button
+              type="button"
+              className="delete-post-button"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              <Trash2 size={18} />
+              {deleting ? "Deleting..." : "Delete Post"}
+            </button>
+          </div>
+        )}
 
       </article>
 
-      {/* COMMENTS SECTION */}
+      {/* =====================================
+          COMMENTS SECTION
+          ===================================== */}
 
       <section className="comments-section">
 
@@ -509,10 +587,7 @@ function PostDetails() {
         {/* ACTION ERRORS */}
 
         {actionError && (
-          <div
-            className="form-error"
-            role="alert"
-          >
+          <div className="form-error" role="alert">
             {actionError}
           </div>
         )}
@@ -576,7 +651,6 @@ function PostDetails() {
                 </div>
 
                 <div className="comment-body">
-
                   <div className="comment-info">
                     <strong>XR Creator</strong>
 
@@ -588,7 +662,6 @@ function PostDetails() {
                   </div>
 
                   <p>{comment.content}</p>
-
                 </div>
               </div>
             ))
