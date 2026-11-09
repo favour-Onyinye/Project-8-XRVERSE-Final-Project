@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   Link,
@@ -22,6 +23,7 @@ import {
 
 import { supabase } from "../lib/supabaseClient";
 import ModelViewer from "../components/ModelViewer";
+import TurnstileCheck from "../components/TurnstileCheck";
 
 function PostDetails() {
   const { id } = useParams();
@@ -36,6 +38,9 @@ function PostDetails() {
 
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
 
   const [commentText, setCommentText] = useState("");
 
@@ -56,12 +61,16 @@ function PostDetails() {
 
     async function loadPost() {
       try {
-        const { data: postData, error: postError } =
-          await supabase
-            .from("posts")
-            .select("*")
-            .eq("id", id)
-            .single();
+        setLoading(true);
+
+        const {
+          data: postData,
+          error: postError,
+        } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("id", id)
+          .single();
 
         if (postError) throw postError;
 
@@ -124,18 +133,30 @@ function PostDetails() {
     );
 
     async function loadCurrentUser() {
-      const { data, error: authError } =
-        await supabase.auth.getUser();
+      try {
+        const {
+          data,
+          error: authError,
+        } = await supabase.auth.getUser();
 
-      if (!active) return;
+        if (!active) return;
 
-      if (authError) {
-        setCurrentUser(null);
-      } else {
-        setCurrentUser(data.user ?? null);
+        if (authError) {
+          setCurrentUser(null);
+        } else {
+          setCurrentUser(data.user ?? null);
+        }
+      } catch (err) {
+        console.error("Auth check error:", err);
+
+        if (active) {
+          setCurrentUser(null);
+        }
+      } finally {
+        if (active) {
+          setAuthLoading(false);
+        }
       }
-
-      setAuthLoading(false);
     }
 
     loadCurrentUser();
@@ -158,13 +179,28 @@ function PostDetails() {
 
     if (sessionError) throw sessionError;
 
+    // NEW VISITOR — REQUIRE CAPTCHA
     if (!sessionData.session) {
+      if (!captchaToken) {
+        throw new Error(
+          "Please complete human verification before participating."
+        );
+      }
+
       const {
         data: authData,
         error: authError,
-      } = await supabase.auth.signInAnonymously();
+      } = await supabase.auth.signInAnonymously({
+        options: {
+          captchaToken,
+        },
+      });
 
-      if (authError) throw authError;
+      if (authError) {
+        setCaptchaToken(null);
+        setCaptchaResetKey((previous) => previous + 1);
+        throw authError;
+      }
 
       if (!authData.user) {
         throw new Error(
@@ -173,9 +209,12 @@ function PostDetails() {
       }
 
       setCurrentUser(authData.user);
+      setCaptchaToken(null);
+
       return authData.user;
     }
 
+    // RETURNING USER — EXISTING SESSION
     const {
       data: userData,
       error: userError,
@@ -194,7 +233,7 @@ function PostDetails() {
   };
 
   // =====================================
-  // 4. CHECK CREATOR OWNERSHIP
+  // 4. CHECK POST OWNERSHIP
   // =====================================
 
   const isOwner =
@@ -207,7 +246,7 @@ function PostDetails() {
   // =====================================
 
   const handleUpvote = async () => {
-    if (!post || upvoting) return;
+    if (!post || upvoting || authLoading) return;
 
     setUpvoting(true);
     setActionError("");
@@ -250,7 +289,12 @@ function PostDetails() {
   const handleComment = async (event) => {
     event.preventDefault();
 
-    if (!post || !commentText.trim() || commenting) {
+    if (
+      !post ||
+      !commentText.trim() ||
+      commenting ||
+      authLoading
+    ) {
       return;
     }
 
@@ -371,7 +415,7 @@ function PostDetails() {
   }
 
   // =====================================
-  // 9. ERROR / POST NOT FOUND
+  // 9. POST ERROR
   // =====================================
 
   if (error || !post) {
@@ -418,7 +462,7 @@ function PostDetails() {
         Back to Community
       </Link>
 
-      {/* POST DETAILS */}
+      {/* POST CARD */}
 
       <article className="post-details-card">
 
@@ -433,7 +477,7 @@ function PostDetails() {
 
         <h1>{post.title}</h1>
 
-        {/* METADATA */}
+        {/* POST METADATA */}
 
         <div className="post-details-meta">
           <span>
@@ -455,7 +499,7 @@ function PostDetails() {
           </div>
         )}
 
-        {/* ARTWORK IMAGE */}
+        {/* IMAGE */}
 
         {post.image_url && (
           <div className="post-artwork">
@@ -517,6 +561,15 @@ function PostDetails() {
           </div>
         )}
 
+        {/* CAPTCHA FOR NEW VISITORS */}
+
+        {!authLoading && !currentUser && (
+          <TurnstileCheck
+            key={captchaResetKey}
+            onTokenChange={setCaptchaToken}
+          />
+        )}
+
         {/* UPVOTE AND COMMENT COUNT */}
 
         <div className="post-interactions">
@@ -524,7 +577,11 @@ function PostDetails() {
             type="button"
             className="upvote-button"
             onClick={handleUpvote}
-            disabled={upvoting}
+            disabled={
+              upvoting ||
+              authLoading ||
+              (!currentUser && !captchaToken)
+            }
           >
             <ArrowUp size={21} />
 
@@ -539,9 +596,7 @@ function PostDetails() {
           </div>
         </div>
 
-        {/* =================================
-            CREATOR-ONLY EDIT AND DELETE
-            ================================= */}
+        {/* CREATOR-ONLY EDIT AND DELETE */}
 
         {!authLoading && isOwner && (
           <div className="post-owner-actions">
@@ -568,11 +623,10 @@ function PostDetails() {
       </article>
 
       {/* =====================================
-          COMMENTS SECTION
+          COMMENTS
           ===================================== */}
 
       <section className="comments-section">
-
         <div className="comments-heading">
           <MessageCircle size={23} />
           <h2>Creative Discussions</h2>
@@ -584,7 +638,7 @@ function PostDetails() {
           and connect with other digital creators.
         </p>
 
-        {/* ACTION ERRORS */}
+        {/* ERROR MESSAGE */}
 
         {actionError && (
           <div className="form-error" role="alert">
@@ -617,7 +671,9 @@ function PostDetails() {
             type="submit"
             disabled={
               commenting ||
-              !commentText.trim()
+              authLoading ||
+              !commentText.trim() ||
+              (!currentUser && !captchaToken)
             }
           >
             <Send size={18} />
@@ -667,7 +723,6 @@ function PostDetails() {
             ))
           )}
         </div>
-
       </section>
     </motion.main>
   );
