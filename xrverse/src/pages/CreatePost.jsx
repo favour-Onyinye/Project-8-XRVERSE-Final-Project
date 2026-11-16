@@ -1,119 +1,116 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 
 import {
   ArrowLeft,
-  Image,
+  Image as ImageIcon,
   Box,
   Video,
   Sparkles,
   Send,
   FileText,
+  Globe,
+  Lock,
 } from "lucide-react";
 
 import { supabase } from "../lib/supabaseClient";
 import { uploadMedia } from "../lib/uploadMedia";
-import TurnstileCheck from "../components/TurnstileCheck";
+import { uploadPrivateMedia } from "../lib/uploadPrivateMedia";
+
+// Enabled after the XRVERSE RLS and Storage access tests.
+const PRIVATE_PUBLISHING_ENABLED = true;
 
 const categories = [
+  "General",
   "3D Art",
   "Virtual Reality",
   "Augmented Reality",
+  "VR/AR",
   "Animation",
   "Game Design",
   "Digital Sculpture",
-  "General",
+  "Digital Art",
 ];
 
 function CreatePost() {
   const navigate = useNavigate();
 
-  // =====================================
-  // 1. POST INFORMATION
-  // =====================================
-
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [category, setCategory] = useState("3D Art");
+  const [visibility, setVisibility] = useState("public");
+
   const [imageUrl, setImageUrl] = useState("");
   const [modelUrl, setModelUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [category, setCategory] = useState("3D Art");
-
-  // =====================================
-  // 2. MEDIA UPLOADS
-  // =====================================
 
   const [imageFile, setImageFile] = useState(null);
   const [modelFile, setModelFile] = useState(null);
 
-  // =====================================
-  // 3. FORM STATUS
-  // =====================================
+  const [creator, setCreator] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadStatus, setUploadStatus] = useState("");
 
-  // =====================================
-  // 4. CLOUDFLARE TURNSTILE
-  // =====================================
-
-  const [captchaToken, setCaptchaToken] = useState(null);
-  const [captchaResetKey, setCaptchaResetKey] = useState(0);
-  const [needsCaptcha, setNeedsCaptcha] = useState(true);
-  const [authLoading, setAuthLoading] = useState(true);
+  const isPrivate = visibility === "private";
 
   // =====================================
-  // 5. CHECK EXISTING SUPABASE SESSION
+  // 1. VERIFY REGISTERED CREATOR
   // =====================================
 
   useEffect(() => {
     let active = true;
 
-    async function checkSession() {
+    async function checkCreator() {
       try {
-        const { data, error: sessionError } =
-          await supabase.auth.getSession();
+        const { data, error: authError } =
+          await supabase.auth.getUser();
 
-        if (sessionError) {
-          throw sessionError;
+        if (!active) return;
+
+        const user = data?.user;
+
+        if (
+          authError ||
+          !user ||
+          user.is_anonymous === true
+        ) {
+          setCreator(null);
+          navigate("/login", { replace: true });
+          return;
         }
 
-        if (active) {
-          setNeedsCaptcha(!data.session);
-        }
+        setCreator(user);
       } catch (err) {
-        console.error("Session check error:", err);
+        console.error("Creator authentication error:", err);
 
         if (active) {
-          setNeedsCaptcha(true);
+          setCreator(null);
+          navigate("/login", { replace: true });
         }
       } finally {
-        if (active) {
-          setAuthLoading(false);
-        }
+        if (active) setCheckingAuth(false);
       }
     }
 
-    checkSession();
+    checkCreator();
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [navigate]);
 
   // =====================================
-  // 6. CREATE AND PUBLISH POST
+  // 2. PUBLISH A POST
   // =====================================
 
-  const handleSubmit = async (event) => {
+  async function handleSubmit(event) {
     event.preventDefault();
 
-    if (loading || authLoading) {
-      return;
-    }
+    if (loading || checkingAuth) return;
 
     setError("");
     setUploadStatus("");
@@ -123,124 +120,158 @@ function CreatePost() {
       return;
     }
 
+    if (!["public", "private"].includes(visibility)) {
+      setError("Please select valid post visibility.");
+      return;
+    }
+
+    if (isPrivate && !PRIVATE_PUBLISHING_ENABLED) {
+      setError(
+        "Private publishing is temporarily unavailable."
+      );
+      return;
+    }
+
+    // A private post must never reference
+    // externally hosted, potentially public media.
+    if (
+      isPrivate &&
+      (
+        imageUrl.trim() ||
+        modelUrl.trim() ||
+        videoUrl.trim()
+      )
+    ) {
+      setError(
+        "Private posts cannot use external image, " +
+        "model, or video URLs. Upload files directly."
+      );
+      return;
+    }
+
     setLoading(true);
 
+    const uploadedPrivatePaths = [];
+    let postSaved = false;
+
     try {
-      // CHECK FOR AN EXISTING SESSION
+      const { data, error: authError } =
+        await supabase.auth.getUser();
 
-      const {
-        data: sessionData,
-        error: sessionError,
-      } = await supabase.auth.getSession();
+      if (authError) throw authError;
 
-      if (sessionError) {
-        throw sessionError;
+      const user = data?.user;
+
+      if (!user || user.is_anonymous === true) {
+        navigate("/login", { replace: true });
+        return;
       }
 
-      let user = null;
+      let finalImageUrl = null;
+      let finalModelUrl = null;
 
-      // RETURNING USER
+      let privateImagePath = null;
+      let privateModelPath = null;
 
-      if (sessionData.session) {
-        const {
-          data,
-          error: userError,
-        } = await supabase.auth.getUser();
+      // ===================================
+      // PRIVATE MEDIA STORAGE
+      // ===================================
 
-        if (userError) {
-          throw userError;
+      if (isPrivate) {
+        if (imageFile) {
+          setUploadStatus(
+            "Uploading private artwork..."
+          );
+
+          const uploaded = await uploadPrivateMedia(
+            imageFile,
+            user.id,
+            "image"
+          );
+
+          if (!uploaded?.path) {
+            throw new Error(
+              "Private image upload did not return a path."
+            );
+          }
+
+          privateImagePath = uploaded.path;
+          uploadedPrivatePaths.push(uploaded.path);
         }
 
-        user = data.user;
+        if (modelFile) {
+          setUploadStatus(
+            "Uploading private 3D model..."
+          );
+
+          const uploaded = await uploadPrivateMedia(
+            modelFile,
+            user.id,
+            "model"
+          );
+
+          if (!uploaded?.path) {
+            throw new Error(
+              "Private model upload did not return a path."
+            );
+          }
+
+          privateModelPath = uploaded.path;
+          uploadedPrivatePaths.push(uploaded.path);
+        }
       } else {
-        // NEW VISITOR — REQUIRE TURNSTILE
+        // ===================================
+        // PUBLIC MEDIA STORAGE
+        // ===================================
 
-        setNeedsCaptcha(true);
+        finalImageUrl = imageUrl.trim() || null;
+        finalModelUrl = modelUrl.trim() || null;
 
-        if (!captchaToken) {
-          throw new Error(
-            "Please complete human verification before publishing."
-          );
-        }
-
-        // SEND CAPTCHA TOKEN TO SUPABASE
-
-        const {
-          data,
-          error: signInError,
-        } = await supabase.auth.signInAnonymously({
-          options: {
-            captchaToken,
-          },
-        });
-
-        // RESET CAPTCHA IF VERIFICATION FAILS
-
-        if (signInError) {
-          setCaptchaToken(null);
-
-          setCaptchaResetKey(
-            (previous) => previous + 1
+        if (imageFile) {
+          setUploadStatus(
+            "Uploading public artwork..."
           );
 
-          throw signInError;
+          finalImageUrl = await uploadMedia(
+            imageFile,
+            user.id,
+            "image"
+          );
+
+          if (!finalImageUrl) {
+            throw new Error(
+              "Public image upload did not return a URL."
+            );
+          }
         }
 
-        user = data.user;
+        if (modelFile) {
+          setUploadStatus(
+            "Uploading public 3D model..."
+          );
 
-        // NEW ANONYMOUS SESSION CREATED
+          finalModelUrl = await uploadMedia(
+            modelFile,
+            user.id,
+            "model"
+          );
 
-        setNeedsCaptcha(false);
-        setCaptchaToken(null);
+          if (!finalModelUrl) {
+            throw new Error(
+              "Public model upload did not return a URL."
+            );
+          }
+        }
       }
 
-      if (!user) {
-        throw new Error(
-          "Unable to create or verify your user session."
-        );
-      }
+      // ===================================
+      // SAVE TO POSTS TABLE
+      // ===================================
 
-      // =====================================
-      // 7. PREPARE MEDIA URLS
-      // =====================================
-
-      let finalImageUrl = imageUrl.trim() || null;
-      let finalModelUrl = modelUrl.trim() || null;
-
-      // UPLOAD IMAGE
-
-      if (imageFile) {
-        setUploadStatus("Uploading your artwork...");
-
-        finalImageUrl = await uploadMedia(
-          imageFile,
-          user.id,
-          "image"
-        );
-      }
-
-      // UPLOAD 3D MODEL
-
-      if (modelFile) {
-        setUploadStatus("Uploading your 3D model...");
-
-        finalModelUrl = await uploadMedia(
-          modelFile,
-          user.id,
-          "model"
-        );
-      }
-
-      // =====================================
-      // 8. SAVE POST TO SUPABASE
-      // =====================================
-
-      setUploadStatus(
-        "Publishing your creation..."
-      );
+      setUploadStatus("Saving your creation...");
 
       const {
-        data: postData,
+        data: newPost,
         error: insertError,
       } = await supabase
         .from("posts")
@@ -248,60 +279,104 @@ function CreatePost() {
           user_id: user.id,
           title: title.trim(),
           content: content.trim() || null,
+          category,
+          visibility,
+
           image_url: finalImageUrl,
           model_url: finalModelUrl,
-          video_url: videoUrl.trim() || null,
-          category,
+          video_url: isPrivate
+            ? null
+            : videoUrl.trim() || null,
+
+          private_image_path: privateImagePath,
+          private_model_path: privateModelPath,
         })
         .select("id")
         .single();
 
-      if (insertError) {
-        throw insertError;
+      if (insertError) throw insertError;
+
+      if (!newPost?.id) {
+        throw new Error(
+          "Post creation did not return an ID."
+        );
       }
 
-      // OPEN THE NEWLY CREATED POST
-
-      navigate(`/post/${postData.id}`);
+      postSaved = true;
+      navigate(`/post/${newPost.id}`);
     } catch (err) {
-      console.error(
-        "XRVERSE publish error:",
-        err
-      );
+      console.error("Create Post error:", err);
+
+      // Clean up newly uploaded private files
+      // if database insertion failed.
+      if (
+        !postSaved &&
+        uploadedPrivatePaths.length > 0
+      ) {
+        try {
+          const { error: cleanupError } =
+            await supabase.storage
+              .from("xrverse-private-media")
+              .remove(uploadedPrivatePaths);
+
+          if (cleanupError) {
+            console.error(
+              "Private upload cleanup failed:",
+              cleanupError
+            );
+          }
+        } catch (cleanupError) {
+          console.error(
+            "Private cleanup error:",
+            cleanupError
+          );
+        }
+      }
 
       setError(
-        err.message ||
-          "Unable to publish your creation."
+        err.message || "Unable to create the post."
       );
     } finally {
       setLoading(false);
       setUploadStatus("");
     }
-  };
+  }
 
   // =====================================
-  // 9. CREATE POST PAGE
+  // 3. AUTHENTICATION LOADING
+  // =====================================
+
+  if (checkingAuth) {
+    return (
+      <main className="create-page">
+        <p role="status">
+          Checking your creator account...
+        </p>
+      </main>
+    );
+  }
+
+  if (!creator) return null;
+
+  // =====================================
+  // 4. CREATE POST FORM
   // =====================================
 
   return (
     <motion.main
       className="create-page"
-      initial={{ opacity: 0, y: 35 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: 0.5 }}
     >
-      {/* BACK BUTTON */}
-
       <button
+        type="button"
         className="back-link"
         onClick={() => navigate("/")}
-        type="button"
       >
         <ArrowLeft size={18} />
         Back to Community
       </button>
-
-      {/* PAGE HEADER */}
 
       <div className="create-header">
         <div className="create-eyebrow">
@@ -310,22 +385,23 @@ function CreatePost() {
         </div>
 
         <h1>
-          Share Your
-          <span> Imagination.</span>
+          Share Your <span>Imagination.</span>
         </h1>
 
         <p>
-          Have an amazing 3D design, immersive VR
-          experience, or creative idea? Share it
-          with the XRVERSE community.
+          Share your digital artwork, 3D creations,
+          and immersive experiences.
+        </p>
+
+        <p>
+          Signed in as:{" "}
+          <strong>{creator.email}</strong>
         </p>
       </div>
 
-      {/* CREATE POST FORM */}
-
       <form
-        onSubmit={handleSubmit}
         className="create-form"
+        onSubmit={handleSubmit}
       >
         {/* POST INFORMATION */}
 
@@ -334,28 +410,23 @@ function CreatePost() {
           <h2>Post Information</h2>
         </div>
 
-        {/* POST TITLE */}
-
         <div className="form-group">
           <label htmlFor="post-title">
-            Post Title
-            <span className="required"> *</span>
+            Post Title *
           </label>
 
           <input
             id="post-title"
             type="text"
-            placeholder="Give your creation an amazing title..."
             value={title}
-            maxLength={150}
             onChange={(event) =>
               setTitle(event.target.value)
             }
+            placeholder="Name your creative project..."
+            maxLength={150}
             required
           />
         </div>
-
-        {/* DESCRIPTION */}
 
         <div className="form-group">
           <label htmlFor="post-content">
@@ -364,20 +435,18 @@ function CreatePost() {
 
           <textarea
             id="post-content"
-            placeholder="Tell the community about your work..."
             value={content}
             onChange={(event) =>
               setContent(event.target.value)
             }
+            placeholder="Describe your creative work..."
             rows={6}
           />
         </div>
 
-        {/* CREATIVE CATEGORY */}
-
         <div className="form-group">
           <label htmlFor="post-category">
-            Creative Category
+            Category
           </label>
 
           <select
@@ -388,36 +457,77 @@ function CreatePost() {
             }
           >
             {categories.map((item) => (
-              <option
-                key={item}
-                value={item}
-              >
+              <option key={item} value={item}>
                 {item}
               </option>
             ))}
           </select>
         </div>
 
-        <div className="form-divider" />
-
-        {/* CREATIVE MEDIA */}
+        {/* VISIBILITY */}
 
         <div className="form-section-heading">
-          <Image size={21} />
-          <h2>Creative Media</h2>
+          {isPrivate ? (
+            <Lock size={21} />
+          ) : (
+            <Globe size={21} />
+          )}
+          <h2>Post Visibility</h2>
         </div>
 
-        <p className="media-description">
-          Make your post more immersive by adding
-          artwork, 3D models, or videos.
-        </p>
+        <div className="form-group">
+          <label htmlFor="post-visibility">
+            Who can view this post?
+          </label>
+
+          <select
+            id="post-visibility"
+            value={visibility}
+            disabled={loading}
+            onChange={(event) => {
+              setVisibility(event.target.value);
+              setError("");
+
+              // Clear hidden URLs so a private
+              // post never retains public links.
+              if (event.target.value === "private") {
+                setImageUrl("");
+                setModelUrl("");
+                setVideoUrl("");
+              }
+            }}
+          >
+            <option value="public">
+              Public — Everyone can view
+            </option>
+            <option
+              value="private"
+              disabled={!PRIVATE_PUBLISHING_ENABLED}
+            >
+              Private — Only I can view
+            </option>
+          </select>
+
+          <p className="media-description">
+            {isPrivate
+              ? "Private posts are visible only to your account. Uploaded files use protected Storage."
+              : "Public posts are visible to registered users and guests."}
+          </p>
+        </div>
+
+        <div className="form-divider" />
 
         {/* IMAGE UPLOAD */}
 
+        <div className="form-section-heading">
+          <ImageIcon size={21} />
+          <h2>Creative Media</h2>
+        </div>
+
         <div className="form-group">
           <label htmlFor="image-upload">
-            <Image size={17} />
-            Upload Artwork from Your Device
+            <ImageIcon size={17} />
+            Upload Artwork
           </label>
 
           <div className="creative-upload-area">
@@ -425,6 +535,7 @@ function CreatePost() {
               id="image-upload"
               type="file"
               accept=".jpg,.jpeg,.png,.webp,.gif"
+              disabled={loading}
               onChange={(event) =>
                 setImageFile(
                   event.target.files?.[0] || null
@@ -433,7 +544,7 @@ function CreatePost() {
             />
 
             <p>
-              Choose a JPG, PNG, WEBP, or GIF image.
+              JPG, PNG, WEBP or GIF.
               Maximum 10 MB.
             </p>
 
@@ -445,52 +556,33 @@ function CreatePost() {
           </div>
         </div>
 
-        {/* IMAGE URL */}
+        {/* PUBLIC IMAGE URL */}
 
-        <div className="form-group">
-          <label htmlFor="post-image">
-            <Image size={17} />
-            Artwork Image URL
-          </label>
+        {!isPrivate && (
+          <div className="form-group">
+            <label htmlFor="image-url">
+              Artwork Image URL (Optional)
+            </label>
 
-          <input
-            id="post-image"
-            type="url"
-            placeholder="https://example.com/artwork.jpg"
-            value={imageUrl}
-            onChange={(event) =>
-              setImageUrl(event.target.value)
-            }
-          />
-        </div>
-
-        {/* IMAGE PREVIEW */}
-
-        {imageUrl && (
-          <div className="image-preview">
-            <p>Artwork Preview</p>
-
-            <img
-              src={imageUrl}
-              alt="Artwork preview"
-              onError={(event) => {
-                event.currentTarget.style.display =
-                  "none";
-              }}
-              onLoad={(event) => {
-                event.currentTarget.style.display =
-                  "block";
-              }}
+            <input
+              id="image-url"
+              type="url"
+              value={imageUrl}
+              disabled={loading}
+              onChange={(event) =>
+                setImageUrl(event.target.value)
+              }
+              placeholder="https://example.com/image.jpg"
             />
           </div>
         )}
 
-        {/* 3D MODEL UPLOAD */}
+        {/* GLB UPLOAD */}
 
         <div className="form-group">
           <label htmlFor="model-upload">
             <Box size={17} />
-            Upload Your 3D Model
+            Upload 3D Model
           </label>
 
           <div className="creative-upload-area">
@@ -498,6 +590,7 @@ function CreatePost() {
               id="model-upload"
               type="file"
               accept=".glb,model/gltf-binary"
+              disabled={loading}
               onChange={(event) =>
                 setModelFile(
                   event.target.files?.[0] || null
@@ -506,8 +599,7 @@ function CreatePost() {
             />
 
             <p>
-              Choose a GLB 3D model.
-              Maximum 25 MB.
+              GLB format only. Maximum 25 MB.
             </p>
 
             {modelFile && (
@@ -518,67 +610,62 @@ function CreatePost() {
           </div>
         </div>
 
-        {/* MODEL URL */}
+        {/* PUBLIC MODEL URL */}
 
-        <div className="form-group">
-          <label htmlFor="post-model">
-            <Box size={17} />
-            3D Model URL (Optional)
-          </label>
+        {!isPrivate && (
+          <div className="form-group">
+            <label htmlFor="model-url">
+              3D Model URL (Optional)
+            </label>
 
-          <input
-            id="post-model"
-            type="url"
-            placeholder="https://example.com/model.glb"
-            value={modelUrl}
-            onChange={(event) =>
-              setModelUrl(event.target.value)
-            }
-          />
-        </div>
-
-        {/* VIDEO URL */}
-
-        <div className="form-group">
-          <label htmlFor="post-video">
-            <Video size={17} />
-            Animation or Video URL (Optional)
-          </label>
-
-          <input
-            id="post-video"
-            type="url"
-            placeholder="https://example.com/video.mp4"
-            value={videoUrl}
-            onChange={(event) =>
-              setVideoUrl(event.target.value)
-            }
-          />
-        </div>
-
-        {/* =====================================
-            CLOUDFLARE CAPTCHA — BOTTOM OF FORM
-            ===================================== */}
-
-        {!authLoading && needsCaptcha && (
-          <TurnstileCheck
-            key={captchaResetKey}
-            onTokenChange={setCaptchaToken}
-          />
-        )}
-
-        {/* ERROR MESSAGE */}
-
-        {error && (
-          <div
-            className="form-error"
-            role="alert"
-          >
-            {error}
+            <input
+              id="model-url"
+              type="url"
+              value={modelUrl}
+              disabled={loading}
+              onChange={(event) =>
+                setModelUrl(event.target.value)
+              }
+              placeholder="https://example.com/model.glb"
+            />
           </div>
         )}
 
-        {/* UPLOAD PROGRESS */}
+        {/* PUBLIC VIDEO URL */}
+
+        {!isPrivate && (
+          <div className="form-group">
+            <label htmlFor="video-url">
+              <Video size={17} />
+              Video URL (Optional)
+            </label>
+
+            <input
+              id="video-url"
+              type="url"
+              value={videoUrl}
+              disabled={loading}
+              onChange={(event) =>
+                setVideoUrl(event.target.value)
+              }
+              placeholder="https://example.com/video.mp4"
+            />
+          </div>
+        )}
+
+        {/* PRIVACY MESSAGE */}
+
+        <p className="media-description">
+          {isPrivate
+            ? "Private uploads save protected file paths, not permanent public URLs."
+            : "Public artwork and models can be viewed by visitors."}
+        </p>
+
+        {error && (
+          <div className="form-error" role="alert">
+            {error}
+          </div>
+        )}
 
         {uploadStatus && (
           <div
@@ -590,29 +677,25 @@ function CreatePost() {
           </div>
         )}
 
-        {/* PUBLISH BUTTON */}
-
         <motion.button
           type="submit"
           className="publish-button"
-          whileHover={{
-            scale: loading ? 1 : 1.02,
-          }}
-          whileTap={{
-            scale: loading ? 1 : 0.98,
-          }}
           disabled={
             loading ||
-            authLoading ||
-            (needsCaptcha && !captchaToken)
+            checkingAuth ||
+            (isPrivate && !PRIVATE_PUBLISHING_ENABLED)
           }
+          whileHover={{ scale: loading ? 1 : 1.02 }}
+          whileTap={{ scale: loading ? 1 : 0.98 }}
         >
           {loading ? (
             "Publishing Your Creation..."
           ) : (
             <>
               <Send size={19} />
-              Publish to XRVERSE
+              {isPrivate
+                ? "Save Private Post"
+                : "Publish to XRVERSE"}
             </>
           )}
         </motion.button>
@@ -622,3 +705,5 @@ function CreatePost() {
 }
 
 export default CreatePost;
+
+

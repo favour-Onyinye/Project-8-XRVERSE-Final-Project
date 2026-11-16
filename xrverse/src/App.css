@@ -1899,3 +1899,185 @@ video {
   border-width: 3px;
   flex-shrink: 0;
 }
+
+
+/* XRVERSE authentication pages */
+
+.auth-page {
+  min-height: 80vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 460px;
+  padding: 36px;
+  border-radius: 22px;
+  background: #171329;
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  color: #ffffff;
+}
+
+.auth-container h1 {
+  margin-bottom: 12px;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.auth-container p {
+  margin-bottom: 20px;
+  color: #c4b5fd;
+}
+
+.auth-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-container .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-container input {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  border: 1px solid #554b70;
+  background: #201b33;
+  color: white;
+}
+
+.auth-container button {
+  cursor: pointer;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.auth-container a {
+  color: #a78bfa;
+}
+
+.auth-container .form-error {
+  color: #fecaca;
+}
+
+
+/* XRVERSE account navigation */
+
+.navbar-account {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.navbar-login,
+.navbar-signup,
+.navbar-guest,
+.navbar-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.navbar-login,
+.navbar-guest {
+  color: #ddd6fe;
+  background: transparent;
+}
+
+.navbar-login:hover,
+.navbar-guest:hover {
+  background: rgba(167, 139, 250, 0.12);
+}
+
+.navbar-signup {
+  color: white;
+  background: #7c3aed;
+}
+
+.navbar-signup:hover {
+  background: #6d28d9;
+}
+
+.navbar-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #c4b5fd;
+  font-size: 13px;
+  max-width: 190px;
+}
+
+.navbar-user span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.navbar-logout {
+  color: #f5f3ff;
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+.navbar-logout:hover {
+  background: rgba(124, 58, 237, 0.3);
+}
+
+.navbar-logout:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .navbar-account {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .navbar-user {
+    max-width: 140px;
+  }
+}
+
+
+/* Private artwork viewer */
+
+.private-post-media {
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 16px;
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.private-post-media h2,
+.private-post-media h3 {
+  color: #ddd6fe;
+}
+
+.private-post-media .post-artwork,
+.private-post-media .post-3d-section {
+  margin-top: 20px;
+}
+

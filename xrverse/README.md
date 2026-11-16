@@ -33,6 +33,13 @@ Here's a walkthrough of the XRVERSE application:
 
 ![XRVERSE App Walkthrough](public/xrverse-walkthrough.gif)
 
+
+## 3D Artworks
+- https://github.khronos.org/glTF-Assets/model/CommercialRefrigerator
+- https://github.khronos.org/glTF-Assets/model/CarConcept
+- https://github.khronos.org/glTF-Assets/?utm_source=chatgpt.com
+- https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Box?utm_source=chatgpt.com
+
 ### Future Improvements
 
 - Creator profiles and personalized portfolios.

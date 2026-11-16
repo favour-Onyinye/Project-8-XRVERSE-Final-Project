@@ -19,11 +19,12 @@ import {
   Sparkles,
   Pencil,
   Trash2,
+  Lock,
 } from "lucide-react";
 
 import { supabase } from "../lib/supabaseClient";
 import ModelViewer from "../components/ModelViewer";
-import TurnstileCheck from "../components/TurnstileCheck";
+import PrivatePostMedia from "../components/PrivatePostMedia";
 
 function PostDetails() {
   const { id } = useParams();
@@ -39,9 +40,6 @@ function PostDetails() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const [captchaToken, setCaptchaToken] = useState(null);
-  const [captchaResetKey, setCaptchaResetKey] = useState(0);
-
   const [commentText, setCommentText] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -53,16 +51,70 @@ function PostDetails() {
   const [actionError, setActionError] = useState("");
 
   // =====================================
-  // 1. LOAD POST AND COMMENTS
+  // 1. IDENTIFY CURRENT USER
+  // =====================================
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCurrentUser() {
+      try {
+        const { data, error: authError } =
+          await supabase.auth.getUser();
+
+        if (!active) return;
+
+        if (authError) {
+          setCurrentUser(null);
+        } else {
+          setCurrentUser(data.user ?? null);
+        }
+      } catch (err) {
+        console.error("XRVERSE auth error:", err);
+
+        if (active) {
+          setCurrentUser(null);
+        }
+      } finally {
+        if (active) {
+          setAuthLoading(false);
+        }
+      }
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!active) return;
+
+        setCurrentUser(session?.user ?? null);
+        setAuthLoading(false);
+      }
+    );
+
+    loadCurrentUser();
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // =====================================
+  // 2. LOAD POST AND COMMENTS
   // =====================================
 
   useEffect(() => {
     let active = true;
 
     async function loadPost() {
-      try {
-        setLoading(true);
+      setLoading(true);
+      setError("");
+      setPost(null);
+      setComments([]);
 
+      try {
         const {
           data: postData,
           error: postError,
@@ -70,16 +122,24 @@ function PostDetails() {
           .from("posts")
           .select("*")
           .eq("id", id)
-          .single();
+          .maybeSingle();
 
         if (postError) throw postError;
+
+        if (!postData) {
+          throw new Error(
+            "Post not found or you do not have permission to view it."
+          );
+        }
 
         const {
           data: commentData,
           error: commentError,
         } = await supabase
           .from("comments")
-          .select("id, content, created_at, user_id")
+          .select(
+            "id, content, created_at, user_id"
+          )
           .eq("post_id", id)
           .order("created_at", {
             ascending: true,
@@ -90,10 +150,9 @@ function PostDetails() {
         if (active) {
           setPost(postData);
           setComments(commentData || []);
-          setError("");
         }
       } catch (err) {
-        console.error("Error loading post:", err);
+        console.error("XRVERSE post loading error:", err);
 
         if (active) {
           setError(
@@ -112,147 +171,68 @@ function PostDetails() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, currentUser?.id]);
 
   // =====================================
-  // 2. IDENTIFY CURRENT VISITOR
+  // 3. REGISTERED ACCOUNT AND OWNERSHIP
   // =====================================
 
-  useEffect(() => {
-    let active = true;
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (active) {
-          setCurrentUser(session?.user ?? null);
-          setAuthLoading(false);
-        }
-      }
-    );
-
-    async function loadCurrentUser() {
-      try {
-        const {
-          data,
-          error: authError,
-        } = await supabase.auth.getUser();
-
-        if (!active) return;
-
-        if (authError) {
-          setCurrentUser(null);
-        } else {
-          setCurrentUser(data.user ?? null);
-        }
-      } catch (err) {
-        console.error("Auth check error:", err);
-
-        if (active) {
-          setCurrentUser(null);
-        }
-      } finally {
-        if (active) {
-          setAuthLoading(false);
-        }
-      }
-    }
-
-    loadCurrentUser();
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // =====================================
-  // 3. GET OR CREATE ANONYMOUS SESSION
-  // =====================================
-
-  const getCurrentUser = async () => {
-    const {
-      data: sessionData,
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError) throw sessionError;
-
-    // NEW VISITOR — REQUIRE CAPTCHA
-    if (!sessionData.session) {
-      if (!captchaToken) {
-        throw new Error(
-          "Please complete human verification before participating."
-        );
-      }
-
-      const {
-        data: authData,
-        error: authError,
-      } = await supabase.auth.signInAnonymously({
-        options: {
-          captchaToken,
-        },
-      });
-
-      if (authError) {
-        setCaptchaToken(null);
-        setCaptchaResetKey((previous) => previous + 1);
-        throw authError;
-      }
-
-      if (!authData.user) {
-        throw new Error(
-          "Unable to create an anonymous session."
-        );
-      }
-
-      setCurrentUser(authData.user);
-      setCaptchaToken(null);
-
-      return authData.user;
-    }
-
-    // RETURNING USER — EXISTING SESSION
-    const {
-      data: userData,
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError) throw userError;
-
-    if (!userData.user) {
-      throw new Error(
-        "Unable to verify the current user."
-      );
-    }
-
-    setCurrentUser(userData.user);
-    return userData.user;
-  };
-
-  // =====================================
-  // 4. CHECK POST OWNERSHIP
-  // =====================================
+  const isRegistered =
+    Boolean(currentUser?.id) &&
+    currentUser.is_anonymous !== true;
 
   const isOwner =
-    Boolean(currentUser?.id) &&
+    isRegistered &&
     Boolean(post?.user_id) &&
     currentUser.id === post.user_id;
 
+  const isPrivate = post?.visibility === "private";
+
   // =====================================
-  // 5. UPVOTE
+  // 4. REQUIRE REGISTERED ACCOUNT
   // =====================================
 
-  const handleUpvote = async () => {
-    if (!post || upvoting || authLoading) return;
+  async function requireRegisteredUser() {
+    const {
+      data,
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    const user = data?.user;
+
+    if (
+      authError ||
+      !user ||
+      user.is_anonymous === true
+    ) {
+      throw new Error(
+        "Please log in with your registered XRVERSE account."
+      );
+    }
+
+    setCurrentUser(user);
+
+    return user;
+  }
+
+  // =====================================
+  // 5. UPVOTE POST
+  // =====================================
+
+  async function handleUpvote() {
+    if (
+      !post ||
+      upvoting ||
+      !isRegistered
+    ) {
+      return;
+    }
 
     setUpvoting(true);
     setActionError("");
 
     try {
-      await getCurrentUser();
+      await requireRegisteredUser();
 
       const {
         data,
@@ -263,16 +243,18 @@ function PostDetails() {
 
       if (voteError) throw voteError;
 
-      setPost((previous) => {
-        if (!previous) return previous;
+      if (typeof data === "number") {
+        setPost((previous) => {
+          if (!previous) return previous;
 
-        return {
-          ...previous,
-          upvotes: data,
-        };
-      });
+          return {
+            ...previous,
+            upvotes: data,
+          };
+        });
+      }
     } catch (err) {
-      console.error("Upvote error:", err);
+      console.error("XRVERSE upvote error:", err);
 
       setActionError(
         err.message || "Unable to upvote this post."
@@ -280,20 +262,20 @@ function PostDetails() {
     } finally {
       setUpvoting(false);
     }
-  };
+  }
 
   // =====================================
   // 6. ADD COMMENT
   // =====================================
 
-  const handleComment = async (event) => {
+  async function handleComment(event) {
     event.preventDefault();
 
     if (
       !post ||
       !commentText.trim() ||
       commenting ||
-      authLoading
+      !isRegistered
     ) {
       return;
     }
@@ -302,7 +284,7 @@ function PostDetails() {
     setActionError("");
 
     try {
-      const user = await getCurrentUser();
+      const user = await requireRegisteredUser();
 
       const {
         data,
@@ -314,7 +296,9 @@ function PostDetails() {
           user_id: user.id,
           content: commentText.trim(),
         })
-        .select("id, content, created_at, user_id")
+        .select(
+          "id, content, created_at, user_id"
+        )
         .single();
 
       if (commentError) throw commentError;
@@ -326,7 +310,7 @@ function PostDetails() {
 
       setCommentText("");
     } catch (err) {
-      console.error("Comment error:", err);
+      console.error("XRVERSE comment error:", err);
 
       setActionError(
         err.message || "Unable to post your comment."
@@ -334,14 +318,20 @@ function PostDetails() {
     } finally {
       setCommenting(false);
     }
-  };
+  }
 
   // =====================================
-  // 7. DELETE POST — CREATOR ONLY
+  // 7. DELETE POST — OWNER ONLY
   // =====================================
 
-  const handleDelete = async () => {
-    if (!post || deleting || !isOwner) return;
+  async function handleDelete() {
+    if (
+      !post ||
+      deleting ||
+      !isOwner
+    ) {
+      return;
+    }
 
     const confirmed = window.confirm(
       "Are you sure you want to permanently delete " +
@@ -354,14 +344,9 @@ function PostDetails() {
     setActionError("");
 
     try {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+      const user = await requireRegisteredUser();
 
-      if (authError) throw authError;
-
-      if (!user || user.id !== post.user_id) {
+      if (user.id !== post.user_id) {
         throw new Error(
           "Access denied. Only the creator can delete this post."
         );
@@ -382,13 +367,13 @@ function PostDetails() {
 
       if (!data) {
         throw new Error(
-          "The post was not deleted. Permission denied."
+          "The post was not deleted. Check your account permissions."
         );
       }
 
       navigate("/");
     } catch (err) {
-      console.error("Delete error:", err);
+      console.error("XRVERSE delete error:", err);
 
       setActionError(
         err.message || "Unable to delete this post."
@@ -396,13 +381,13 @@ function PostDetails() {
     } finally {
       setDeleting(false);
     }
-  };
+  }
 
   // =====================================
-  // 8. LOADING
+  // 8. LOADING STATE
   // =====================================
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <main
         className="post-details-loading"
@@ -423,9 +408,14 @@ function PostDetails() {
       <main className="post-details-error">
         <h2>Unable to display this post</h2>
 
-        <p>{error || "Post not found."}</p>
+        <p>
+          {error || "Post not found."}
+        </p>
 
-        <Link to="/" className="primary-button">
+        <Link
+          to="/"
+          className="primary-button"
+        >
           Return to Community
         </Link>
       </main>
@@ -433,7 +423,7 @@ function PostDetails() {
   }
 
   // =====================================
-  // 10. DATE
+  // 10. FORMAT DATE
   // =====================================
 
   const formattedDate = new Date(
@@ -457,7 +447,10 @@ function PostDetails() {
     >
       {/* BACK NAVIGATION */}
 
-      <Link to="/" className="details-back-link">
+      <Link
+        to="/"
+        className="details-back-link"
+      >
         <ArrowLeft size={18} />
         Back to Community
       </Link>
@@ -491,6 +484,16 @@ function PostDetails() {
           </span>
         </div>
 
+        {/* VISIBILITY */}
+
+        {isPrivate && isOwner && (
+          <p className="media-description">
+            <Lock size={16} />
+            Private Post — Only your account can view
+            this post.
+          </p>
+        )}
+
         {/* DESCRIPTION */}
 
         {post.content && (
@@ -499,9 +502,9 @@ function PostDetails() {
           </div>
         )}
 
-        {/* IMAGE */}
+        {/* PUBLIC ARTWORK IMAGE */}
 
-        {post.image_url && (
+        {!isPrivate && post.image_url && (
           <div className="post-artwork">
             <img
               src={post.image_url}
@@ -511,9 +514,9 @@ function PostDetails() {
           </div>
         )}
 
-        {/* INTERACTIVE 3D MODEL */}
+        {/* PUBLIC INTERACTIVE 3D MODEL */}
 
-        {post.model_url && (
+        {!isPrivate && post.model_url && (
           <section className="post-3d-section">
             <div className="post-3d-heading">
               <Box size={22} />
@@ -521,8 +524,8 @@ function PostDetails() {
             </div>
 
             <p>
-              Rotate, zoom, and explore this creation
-              from different perspectives.
+              Rotate, zoom, and explore this
+              creation from different perspectives.
             </p>
 
             <ModelViewer url={post.model_url} />
@@ -539,15 +542,27 @@ function PostDetails() {
           </section>
         )}
 
-        {/* VIDEO */}
+        {/* PRIVATE ARTWORK — OWNER ONLY */}
 
-        {post.video_url && (
+        {isPrivate && isOwner && (
+          <PrivatePostMedia
+            imagePath={post.private_image_path}
+            modelPath={post.private_model_path}
+            title={post.title}
+          />
+        )}
+
+        {/* PUBLIC VIDEO */}
+
+        {!isPrivate && post.video_url && (
           <div className="post-media-link">
             <Video size={22} />
 
             <div>
               <h3>Watch the Animation</h3>
-              <p>Explore this motion design project.</p>
+              <p>
+                Explore this motion design project.
+              </p>
             </div>
 
             <a
@@ -561,16 +576,7 @@ function PostDetails() {
           </div>
         )}
 
-        {/* CAPTCHA FOR NEW VISITORS */}
-
-        {!authLoading && !currentUser && (
-          <TurnstileCheck
-            key={captchaResetKey}
-            onTokenChange={setCaptchaToken}
-          />
-        )}
-
-        {/* UPVOTE AND COMMENT COUNT */}
+        {/* UPVOTES AND COMMENT COUNT */}
 
         <div className="post-interactions">
           <button
@@ -579,8 +585,7 @@ function PostDetails() {
             onClick={handleUpvote}
             disabled={
               upvoting ||
-              authLoading ||
-              (!currentUser && !captchaToken)
+              !isRegistered
             }
           >
             <ArrowUp size={21} />
@@ -598,7 +603,7 @@ function PostDetails() {
 
         {/* CREATOR-ONLY EDIT AND DELETE */}
 
-        {!authLoading && isOwner && (
+        {isOwner && (
           <div className="post-owner-actions">
             <Link
               to={`/edit/${post.id}`}
@@ -615,15 +620,42 @@ function PostDetails() {
               disabled={deleting}
             >
               <Trash2 size={18} />
-              {deleting ? "Deleting..." : "Delete Post"}
+              {deleting
+                ? "Deleting..."
+                : "Delete Post"}
             </button>
+          </div>
+        )}
+
+        {/* GUEST MESSAGE */}
+
+        {!isRegistered && (
+          <p className="media-description">
+            Want to participate in XRVERSE?{" "}
+            <Link to="/login">Log In</Link>
+            {" or "}
+            <Link to="/signup">
+              Create an Account
+            </Link>
+            .
+          </p>
+        )}
+
+        {/* ACTION ERROR */}
+
+        {actionError && (
+          <div
+            className="form-error"
+            role="alert"
+          >
+            {actionError}
           </div>
         )}
 
       </article>
 
       {/* =====================================
-          COMMENTS
+          COMMENTS SECTION
           ===================================== */}
 
       <section className="comments-section">
@@ -638,51 +670,43 @@ function PostDetails() {
           and connect with other digital creators.
         </p>
 
-        {/* ERROR MESSAGE */}
+        {/* COMMENT FORM — REGISTERED USERS */}
 
-        {actionError && (
-          <div className="form-error" role="alert">
-            {actionError}
-          </div>
-        )}
-
-        {/* COMMENT FORM */}
-
-        <form
-          className="comment-form"
-          onSubmit={handleComment}
-        >
-          <label htmlFor="new-comment">
-            Join the conversation
-          </label>
-
-          <textarea
-            id="new-comment"
-            value={commentText}
-            onChange={(event) =>
-              setCommentText(event.target.value)
-            }
-            placeholder="What do you think about this creation?"
-            rows={4}
-            required
-          />
-
-          <button
-            type="submit"
-            disabled={
-              commenting ||
-              authLoading ||
-              !commentText.trim() ||
-              (!currentUser && !captchaToken)
-            }
+        {isRegistered && (
+          <form
+            className="comment-form"
+            onSubmit={handleComment}
           >
-            <Send size={18} />
+            <label htmlFor="new-comment">
+              Join the conversation
+            </label>
 
-            {commenting
-              ? "Posting..."
-              : "Post Comment"}
-          </button>
-        </form>
+            <textarea
+              id="new-comment"
+              value={commentText}
+              onChange={(event) =>
+                setCommentText(event.target.value)
+              }
+              placeholder="What do you think about this creation?"
+              rows={4}
+              required
+            />
+
+            <button
+              type="submit"
+              disabled={
+                commenting ||
+                !commentText.trim()
+              }
+            >
+              <Send size={18} />
+
+              {commenting
+                ? "Posting..."
+                : "Post Comment"}
+            </button>
+          </form>
+        )}
 
         {/* COMMENT LIST */}
 

@@ -12,18 +12,6 @@ function SupabaseCheck() {
 
     async function checkConnection() {
       try {
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.getSession();
-
-        if (sessionError) throw sessionError;
-
-        if (!sessionData.session) {
-          const { error: signInError } =
-            await supabase.auth.signInAnonymously();
-
-          if (signInError) throw signInError;
-        }
-
         const { count, error } = await supabase
           .from("posts")
           .select("*", {
@@ -38,18 +26,18 @@ function SupabaseCheck() {
             `Connected to Supabase! ${count ?? 0} posts found.`
           );
         }
-        }  catch (error) {
-            console.error("XRVERSE Supabase Error:", error);
+      } catch (error) {
+        console.error("XRVERSE Supabase Error:", error);
 
-            if (!cancelled) {
-                setStatus(
-                `Connection failed: ${
-                    error?.message || JSON.stringify(error) || "Unknown error"
-                }`
-                );
-            }
-            }
-                }
+        if (!cancelled) {
+          setStatus(
+            `Connection failed: ${
+              error?.message || "Unknown error"
+            }`
+          );
+        }
+      }
+    }
 
     checkConnection();
 
