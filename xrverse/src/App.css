@@ -2081,3 +2081,702 @@ video {
   margin-top: 20px;
 }
 
+
+/* =====================================
+   XRVERSE MY PROFILE
+   ===================================== */
+
+.profile-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 50px 24px 90px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 32px;
+  margin: 30px 0;
+  border: 1px solid rgba(165, 130, 255, 0.25);
+  border-radius: 22px;
+  background: rgba(120, 90, 200, 0.08);
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    #7c3aed,
+    #2563eb
+  );
+  color: #fff;
+}
+
+.profile-info {
+  min-width: 0;
+}
+
+.profile-info h1 {
+  margin-bottom: 15px;
+  overflow-wrap: anywhere;
+}
+
+.profile-info p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 9px 0;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin: 30px 0;
+}
+
+.profile-stat-card {
+  padding: 28px;
+  border-radius: 18px;
+  text-align: center;
+  border: 1px solid rgba(165, 130, 255, 0.2);
+  background: rgba(120, 90, 200, 0.08);
+}
+
+.profile-stat-card h2 {
+  font-size: 32px;
+  margin: 12px 0;
+}
+
+.profile-stat-card p {
+  opacity: 0.8;
+}
+
+.profile-actions,
+.profile-recent {
+  margin-top: 40px;
+}
+
+.profile-action-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 18px;
+}
+
+.profile-post-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.profile-post-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid rgba(165, 130, 255, 0.2);
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  background: rgba(120, 90, 200, 0.06);
+}
+
+.profile-post-item:hover {
+  border-color: #8b5cf6;
+}
+
+.profile-post-item h3 {
+  margin-bottom: 6px;
+}
+
+.profile-post-item span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-post-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+
+/* =====================================
+   XRVERSE NAVBAR
+   ===================================== */
+
+.navbar {
+  position: relative;
+  z-index: 100;
+  width: 100%;
+}
+
+.navbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 18px 24px;
+}
+
+.navbar-logo {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-decoration: none;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.navbar-logo span {
+  color: #a78bfa;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  background: rgba(139, 92, 246, 0.16);
+}
+
+.navbar-logout {
+  border: 1px solid rgba(165, 130, 255, 0.25);
+}
+
+.navbar-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.navbar-error {
+  padding: 8px 24px;
+  text-align: center;
+  color: #f87171;
+}
+
+@media (max-width: 850px) {
+  .navbar-container {
+    flex-wrap: wrap;
+  }
+
+  .navbar-menu-toggle {
+    display: inline-flex;
+  }
+
+  .navbar-links {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .navbar-links.open {
+    display: flex;
+  }
+
+  .nav-link {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
+
+/* =====================================
+   XRVERSE — MY ARTWORK GALLERY
+   ===================================== */
+
+.my-artwork-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px 90px;
+}
+
+.my-artwork-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 30px 0;
+}
+
+.my-artwork-header h1 {
+  margin: 12px 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.my-artwork-header p {
+  opacity: 0.8;
+}
+
+/* STATISTICS */
+
+.my-artwork-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin: 28px 0;
+}
+
+.my-artwork-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  border: 1px solid rgba(165, 130, 255, 0.22);
+  border-radius: 18px;
+  background: rgba(120, 90, 200, 0.08);
+}
+
+.my-artwork-stat strong {
+  font-size: 30px;
+}
+
+.my-artwork-stat span {
+  opacity: 0.8;
+}
+
+/* SEARCH */
+
+.my-artwork-toolbar {
+  display: flex;
+  gap: 14px;
+  margin: 30px 0 20px;
+}
+
+.my-artwork-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1px solid rgba(165, 130, 255, 0.3);
+  border-radius: 12px;
+}
+
+.my-artwork-search input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.my-artwork-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border: 1px solid rgba(165, 130, 255, 0.3);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* FILTER TABS */
+
+.my-artwork-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.my-artwork-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border: 1px solid rgba(165, 130, 255, 0.25);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.my-artwork-tab.active {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.my-artwork-tab span {
+  opacity: 0.7;
+}
+
+/* ARTWORK GRID */
+
+.my-artwork-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.my-artwork-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(165, 130, 255, 0.22);
+  border-radius: 18px;
+  background: rgba(120, 90, 200, 0.08);
+}
+
+.my-artwork-preview {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #171326;
+}
+
+.my-artwork-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.my-artwork-placeholder,
+.my-artwork-private-preview {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #c4b5fd;
+}
+
+.my-artwork-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+
+.my-artwork-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.my-artwork-category {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.my-artwork-visibility {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+}
+
+.my-artwork-visibility.private {
+  color: #c4b5fd;
+}
+
+.my-artwork-visibility.public {
+  color: #86efac;
+}
+
+.my-artwork-card-body h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.my-artwork-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
+.my-artwork-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.my-artwork-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.my-artwork-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border: 1px solid rgba(165, 130, 255, 0.25);
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.my-artwork-action:hover {
+  border-color: #8b5cf6;
+}
+
+.my-artwork-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 65px 20px;
+  text-align: center;
+}
+
+@media (max-width: 950px) {
+  .my-artwork-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .my-artwork-header,
+  .my-artwork-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .my-artwork-stats,
+  .my-artwork-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =====================================
+   XRVERSE LOGIN IMPROVEMENTS
+   ===================================== */
+
+.auth-guest-section {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 20px 0;
+  opacity: 0.65;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(165, 130, 255, 0.3);
+}
+
+.auth-guest-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  border: 1px solid rgba(165, 130, 255, 0.35);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-guest-button:hover {
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.auth-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auth-security-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 26px;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 52px;
+  box-sizing: border-box;
+}
+
+.password-visibility-button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.forgot-password-link {
+  text-align: right;
+  margin: 10px 0 20px;
+}
+
+.forgot-password-link a {
+  color: #c4b5fd;
+}
+
+
+/* =====================================
+   XRVERSE MY PROFILE NAVIGATION BUTTON
+   ===================================== */
+
+.navbar-profile-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 11px 18px;
+  border: 1px solid #a78bfa;
+  border-radius: 12px;
+
+  background: #7c3aed;
+  color: #ffffff !important;
+
+  font-weight: 600;
+  text-decoration: none;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.navbar-profile-button:hover {
+  background: #6d28d9;
+  transform: translateY(-1px);
+}
+
+.navbar-profile-button.active {
+  background: #5b21b6;
+  border-color: #c4b5fd;
+}
+
+.navbar-profile-button:focus-visible {
+  outline: 3px solid #c4b5fd;
+  outline-offset: 3px;
+}
+
+/* Ensure the Google button is visible */
+
+.google-signin-container {
+  display: block;
+  width: 100%;
+  margin: 18px 0;
+}
+
+.google-signin-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  width: 100%;
+  min-height: 48px;
+  padding: 14px 20px;
+
+  background: white;
+  color: #202124;
+
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.google-signin-button:hover:not(:disabled) {
+  background: #f4f4f5;
+}
+
+.google-signin-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.google-signin-button:focus-visible {
+  outline: 3px solid #8b5cf6;
+  outline-offset: 3px;
+}
