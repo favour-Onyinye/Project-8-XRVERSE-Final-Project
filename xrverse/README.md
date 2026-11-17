@@ -217,12 +217,16 @@ https://xrverse-creative.netlify.app/
 ### Authentication
 ![XRVERSE Login](public/screenshots/login.png)
 
+## Project Walkthrough
 
-## Video Walkthrough
+Explore the XRVERSE application, including public artwork
+discovery, interactive 3D models, creator authentication,
+and personal artwork management.
 
-Here's a walkthrough of the XRVERSE application:
+![XRVERSE Project Walkthrough](public/xrverse-portfolio-walkthrough.gif)
 
-![XRVERSE App Walkthrough](public/xrverse-walkthrough.gif)
+[Launch XRVERSE](https://xrverse-creative.netlify.app/)
+
 
 
 ## 3D Artworks
