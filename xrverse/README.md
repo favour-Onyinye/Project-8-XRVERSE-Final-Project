@@ -4,28 +4,219 @@ XRVERSE is an interactive community platform where digital artists, 3D creators,
 
 Built with React, Vite, Supabase, Three.js, and React Three Fiber, XRVERSE combines a traditional discussion forum with an immersive digital art gallery.
 
-### Features
+XRVERSE is a full-stack web application where digital
+artists, 3D creators, and VR/AR developers can discover,
+share, and manage creative projects.
 
-- Create posts with titles, descriptions, and categories.
-- Upload images directly from a computer or device.
-- Upload GLB 3D models without using external hosting links.
-- Rotate, zoom, and explore 3D models interactively.
-- Browse a community feed with search, filters, and sorting.
-- Upvote posts and leave comments.
-- Edit and delete posts.
-- Discover images, models, and animations in the Explore Gallery.
-- Store posts and uploaded artwork with Supabase.
+The platform combines a React community experience with
+interactive 3D artwork, creator authentication, artwork
+management, and privacy-aware publishing.
 
-### Technologies Used
+## Live Application
 
-- React and Vite
-- JavaScript and CSS
-- React Router
-- Supabase Database, Authentication, and Storage
-- Three.js and React Three Fiber
-- Drei
-- Motion
-- Lucide React
+**Website:** https://xrverse-creative.netlify.app/
+
+## Project Overview
+
+Digital creators often work across separate platforms to
+share their artwork, showcase 3D models, and interact with
+other creators.
+
+XRVERSE brings these experiences together in one creative
+community designed around immersive digital content.
+
+Users can browse public work, explore 3D creations,
+register as creators, and manage their own artwork.
+
+## Key Features
+
+### Authentication and Creator Accounts
+- Email/password registration and login
+- Google OAuth authentication through Supabase
+- Password recovery
+- Creator profile and profile editing
+- Guest browsing without registration
+
+### Creative Community
+- Create, view, edit, and delete posts
+- Search and explore public creations
+- Filter artwork by media type
+- Comment and upvote as a registered user
+- Navigate between community posts and artwork
+
+### Interactive 3D Experiences
+- Display supported 3D models
+- Rotate and explore models using Three.js
+- Responsive visual gallery
+- Support for images and 3D media
+
+### Personal Artwork Management
+- My Artwork dashboard
+- Public and private artwork
+- Search and filter personal creations
+- Manage posts owned by the signed-in creator
+
+### Privacy and Security
+- Supabase Row Level Security (RLS)
+- Owner-based editing and deletion
+- Protected private artwork
+- Authenticated media uploads
+- Separate public and private media storage
+- Secure authentication using Supabase Auth
+
+## Technology Stack
+
+| Category | Technology |
+|----------|------------|
+| Frontend | React, JavaScript, Vite |
+| Routing | React Router |
+| UI Animation | Motion |
+| Icons | Lucide React |
+| 3D Rendering | Three.js, React Three Fiber, Drei |
+| Backend | Supabase |
+| Database | PostgreSQL |
+| Authentication | Supabase Auth, Google OAuth |
+| File Storage | Supabase Storage |
+| Hosting | Netlify |
+| Version Control | Git, GitHub |
+
+## Application Architecture
+
+XRVERSE uses a React single-page application connected
+to Supabase services.
+
+- React manages the user interface and application state.
+- React Router handles navigation between pages.
+- Supabase Auth manages registration, login, and sessions.
+- PostgreSQL stores community posts and related data.
+- Row Level Security enforces database access policies.
+- Supabase Storage manages uploaded artwork files.
+- React Three Fiber and Three.js render 3D models.
+- Netlify hosts the production frontend.
+
+## Security Design
+
+XRVERSE uses authorization policies in Supabase rather
+than relying only on hidden interface buttons.
+
+Registered creators can edit or delete posts they own.
+Private posts and protected files are restricted through
+database and storage access policies.
+
+Public visitors can browse public content without
+accessing private creator assets.
+
+## Running Locally
+
+### Requirements
+
+- Node.js
+- npm
+- A configured Supabase project
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/favour-Onyinye/Project-8-XRVERSE-Final-Project.git
+```
+
+Open the project directory containing package.json:
+
+```bash
+cd Project-8-XRVERSE-Final-Project
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Configure your frontend Supabase environment variables
+according to your project's Supabase client configuration.
+
+Never commit secret or service-role keys.
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Open the local URL displayed in the terminal.
+
+A working Supabase database, storage buckets, and access
+policies are required for backend-dependent functionality.
+
+## Engineering Challenges
+
+### Secure Content Ownership
+
+Implemented owner-based access controls to ensure
+creators can manage their own posts without granting
+unrestricted edit or delete access to other users.
+
+### Private Media
+
+Configured private storage and signed media access to
+support artwork that is not publicly available.
+
+### Interactive 3D Content
+
+Integrated React Three Fiber and Three.js to support
+interactive viewing of 3D assets.
+
+### Authentication and Deployment
+
+Integrated Supabase authentication with Google OAuth,
+configured authentication redirects, and deployed the
+application through GitHub and Netlify.
+
+## Future Improvements
+
+- Expanded creator discovery and search
+- More advanced 3D asset previews
+- Improved accessibility and mobile usability
+- Creator follow and collaboration features
+- Automated end-to-end testing
+
+## Author
+
+Favour Onyinye
+
+Software Engineering | Digital Art | XR Development
+
+## Project Status
+
+Deployed as a portfolio and learning project.
+
+Live Website:
+https://xrverse-creative.netlify.app/
+```
+
+
+## Application Screenshots
+
+### Homepage
+![XRVERSE Homepage](public/screenshots/homepage.png)
+
+### Explore Gallery
+![XRVERSE Explore](public/screenshots/explore.png)
+
+### Interactive 3D Viewer
+![XRVERSE 3D Viewer](public/screenshots/3d-viewer.png)
+
+### Creator Profile
+![XRVERSE Creator Profile](public/screenshots/my-profile.png)
+
+### My Artwork
+![XRVERSE My Artwork](public/screenshots/my-artwork.png)
+
+### Authentication
+![XRVERSE Login](public/screenshots/login.png)
+
 
 ## Video Walkthrough
 
